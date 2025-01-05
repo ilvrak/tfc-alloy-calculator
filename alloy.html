@@ -52,7 +52,7 @@
                 const total_mb = ingots * 144;
                 
                 for (const component in alloys[alloy]) {
-                    min_values[component] = Math.floor((total_mb * alloys[alloy][component][0]) / 100 / granularities[component]) * granularities[component];
+                    min_values[component] = Math.ceil((total_mb * alloys[alloy][component][0]) / 100 / granularities[component]) * granularities[component];
                     max_values[component] = Math.floor((total_mb * alloys[alloy][component][1]) / 100 / granularities[component]) * granularities[component];
                 }
 
@@ -63,10 +63,10 @@
                 function findCombination(components, index, currentCombo) {
                     if (index === components.length) {
                         let sum = Object.values(currentCombo).reduce((a, b) => a + b, 0);
-                        let remainder = total_mb - sum;
+                        let remainder = sum - total_mb;
                         if (remainder === 0) {
                             results.push({...currentCombo, remainder: 0});
-                        } else if (remainder > 0 && remainder < bestRemainder) {
+                        } else if (remainder >= 0 && remainder < bestRemainder) {
                             bestRemainder = remainder;
                             bestCombination = {...currentCombo, remainder};
                         }
@@ -89,7 +89,7 @@
             resultDiv.innerHTML = "";
             
             function formatResult(result) {
-                let output = "<div class='result-block'>";
+                let output = "<p>";
                 for (const component in result) {
                     if (component !== "remainder") {
                         let units = result[component] / granularities[component];
@@ -97,14 +97,14 @@
                     }
                 }
                 if (result.remainder) {
-                    output += `Remainder: ${result.remainder} mb`;
+                    output += `Remaining: ${result.remainder} mb`;
                 }
-                output += "</div>";
+                output += "</p>";
                 return output;
             }
             
             if (exactMatches.length === 0) {
-                resultDiv.innerHTML = "<p>It is impossible to create an alloy without residue. Possible options with residue:</p>";
+                resultDiv.innerHTML = "<p>Cannot create alloy exactly. Possible options with remainder:</p>";
                 if (bestApproximation) {
                     resultDiv.innerHTML += formatResult(bestApproximation);
                 } else {
@@ -113,7 +113,7 @@
                         minIngots++;
                         ({exactMatches, bestApproximation} = canCreateAlloy(minIngots));
                     }
-                    resultDiv.innerHTML = `<p>Cannot create an alloy with ${ingots} ingots. Minimum required quantity: ${minIngots} ingots.</p>`;
+                    resultDiv.innerHTML = `<p>Cannot create alloy with ${ingots} ingots. Minimum required: ${minIngots} ingots.</p>`;
                 }
             } else {
                 exactMatches.forEach(r => {
@@ -125,7 +125,7 @@
 </head>
 <body>
     <h1>TFC 1.20.1 Alloy Calculator</h1>
-    <label>Select alloy:
+    <label>Select Alloy:
         <select id="alloy" onchange="updateComponents()">
             <option value="Bismuth Bronze">Bismuth Bronze</option>
             <option value="Black Bronze">Black Bronze</option>
@@ -134,7 +134,7 @@
         </select>
     </label>
     <br>
-    <label>Number of ingots: <input type="number" id="ingots" value="1" min="1"></label>
+    <label>Number of Ingots: <input type="number" id="ingots" value="1" min="1"></label>
     <br>
     <div id="components"></div>
     <button onclick="calculateAlloy()">Calculate</button>

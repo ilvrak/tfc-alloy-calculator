@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TFC 1.20.1 Alloy Calculator</title>
+    <title>Alloy Calculator</title>
     <script>
         const alloys = {
             "Bismuth Bronze": {
@@ -42,6 +42,7 @@
             let granularities = {};
             let min_values = {};
             let max_values = {};
+            const MAX_MB = 3000;
 
             for (const component in alloys[alloy]) {
                 const granularity = parseInt(document.getElementById(`granularity_${component}`).value);
@@ -90,9 +91,11 @@
             
             function formatResult(result) {
                 let output = "<p>";
+                let totalMb = 0;
                 for (const component in result) {
                     if (component !== "remainder") {
                         let units = result[component] / granularities[component];
+                        totalMb += result[component];
                         output += `${component}: ${result[component]} mb (${units} × ${granularities[component]} mb) | `;
                     }
                 }
@@ -100,6 +103,11 @@
                     output += `Remaining: ${result.remainder} mb`;
                 }
                 output += "</p>";
+                if (totalMb > MAX_MB) {
+                    output += `<p style='color: red;'>Warning: Total material exceeds ${MAX_MB} mb.</p>`;
+                    let maxIngots = Math.floor(MAX_MB / 144);
+                    output += `<p>Maximum ingots to stay within ${MAX_MB} mb: ${maxIngots}.</p>`;
+                }
                 return output;
             }
             
@@ -124,7 +132,7 @@
     </script>
 </head>
 <body>
-    <h1>TFC 1.20.1 Alloy Calculator</h1>
+    <h1>Alloy Calculator</h1>
     <label>Select Alloy:
         <select id="alloy" onchange="updateComponents()">
             <option value="Bismuth Bronze">Bismuth Bronze</option>

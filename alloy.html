@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Калькулятор Сплавов</title>
+    <script>
+        const alloys = {
+            "Bismuth Bronze": {
+                "Copper": [50, 65],
+                "Zinc": [20, 30],
+                "Bismuth": [10, 20]
+            },
+            "Black Bronze": {
+                "Copper": [50, 70],
+                "Gold": [10, 25],
+                "Silver": [10, 25]
+            },
+            "Bronze": {
+                "Copper": [88, 92],
+                "Tin": [8, 12]
+            },
+            "Brass": {
+                "Copper": [88, 92],
+                "Zinc": [8, 12]
+            }
+        };
+
+        function updateComponents() {
+            const alloy = document.getElementById("alloy").value;
+            const componentsDiv = document.getElementById("components");
+            componentsDiv.innerHTML = "";
+            
+            for (const component in alloys[alloy]) {
+                componentsDiv.innerHTML += `<label>${component}: <input type='number' id='granularity_${component}' value='16' min='1'></label><br>`;
+            }
+        }
+
+        function calculateAlloy() {
+            let ingots = parseInt(document.getElementById("ingots").value);
+            const alloy = document.getElementById("alloy").value;
+            let granularities = {};
+            let min_values = {};
+            let max_values = {};
+
+            for (const component in alloys[alloy]) {
+                const granularity = parseInt(document.getElementById(`granularity_${component}`).value);
+                granularities[component] = granularity;
+            }
+
+            function canCreateAlloy(ingots) {
+                const total_mb = ingots * 144;
+                
+                for (const component in alloys[alloy]) {
+                    min_values[component] = Math.floor((total_mb * alloys[alloy][component][0]) / 100 / granularities[component]) * granularities[component];
+                    max_values[component] = Math.floor((total_mb * alloys[alloy][component][1]) / 100 / granularities[component]) * granularities[component];
+                }
+
+                let results = [];
+                let bestRemainder = total_mb;
+                let bestCombination = null;
+                
+                function findCombination(components, index, currentCombo) {
+                    if (index === components.length) {
+                        let sum = Object.values(currentCombo).reduce((a, b) => a + b, 0);
+                        let remainder = total_mb - sum;
+                        if (remainder === 0) {
+                            results.push({...currentCombo, remainder: 0});
+                        } else if (remainder > 0 && remainder < bestRemainder) {
+                            bestRemainder = remainder;
+                            bestCombination = {...currentCombo, remainder};
+                        }
+                        return;
+                    }
+                    
+                    let component = components[index];
+                    for (let i = min_values[component]; i <= max_values[component]; i += granularities[component]) {
+                        currentCombo[component] = i;
+                        findCombination(components, index + 1, currentCombo);
+                    }
+                }
+                
+                findCombination(Object.keys(alloys[alloy]), 0, {});
+                return {exactMatches: results, bestApproximation: bestCombination};
+            }
+
+            let {exactMatches, bestApproximation} = canCreateAlloy(ingots);
+            let resultDiv = document.getElementById("result");
+            resultDiv.innerHTML = "";
+            
+            function formatResult(result) {
+                let output = "<div class='result-block'>";
+                for (const component in result) {
+                    if (component !== "remainder") {
+                        let units = result[component] / granularities[component];
+                        output += `${component}: ${result[component]} mb (${units} × ${granularities[component]} mb) | `;
+                    }
+                }
+                if (result.remainder) {
+                    output += `Остаток: ${result.remainder} mb`;
+                }
+                output += "</div>";
+                return output;
+            }
+            
+            if (exactMatches.length === 0) {
+                resultDiv.innerHTML = "<p>Невозможно создать сплав без остатка. Возможные варианты с остатком:</p>";
+                if (bestApproximation) {
+                    resultDiv.innerHTML += formatResult(bestApproximation);
+                } else {
+                    let minIngots = ingots;
+                    while (exactMatches.length === 0) {
+                        minIngots++;
+                        ({exactMatches, bestApproximation} = canCreateAlloy(minIngots));
+                    }
+                    resultDiv.innerHTML = `<p>Невозможно создать сплав с ${ingots} слитками. Минимальное необходимое количество: ${minIngots} слитков.</p>`;
+                }
+            } else {
+                exactMatches.forEach(r => {
+                    resultDiv.innerHTML += formatResult(r);
+                });
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>Калькулятор Сплавов</h1>
+    <label>Выберите сплав:
+        <select id="alloy" onchange="updateComponents()">
+            <option value="Bismuth Bronze">Bismuth Bronze</option>
+            <option value="Black Bronze">Black Bronze</option>
+            <option value="Bronze">Bronze</option>
+            <option value="Brass">Brass</option>
+        </select>
+    </label>
+    <br>
+    <label>Количество слитков: <input type="number" id="ingots" value="1" min="1"></label>
+    <br>
+    <div id="components"></div>
+    <button onclick="calculateAlloy()">Рассчитать</button>
+    <h2>Результаты:</h2>
+    <div id="result"></div>
+    
+    <script>
+        updateComponents();
+    </script>
+</body>
+</html>

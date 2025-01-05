@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Калькулятор Сплавов</title>
+    <title>TFC 1.20.1 Alloy Calculator</title>
     <script>
         const alloys = {
             "Bismuth Bronze": {
@@ -97,14 +97,14 @@
                     }
                 }
                 if (result.remainder) {
-                    output += `Остаток: ${result.remainder} mb`;
+                    output += `Remainder: ${result.remainder} mb`;
                 }
                 output += "</div>";
                 return output;
             }
             
             if (exactMatches.length === 0) {
-                resultDiv.innerHTML = "<p>Невозможно создать сплав без остатка. Возможные варианты с остатком:</p>";
+                resultDiv.innerHTML = "<p>It is impossible to create an alloy without residue. Possible options with residue:</p>";
                 if (bestApproximation) {
                     resultDiv.innerHTML += formatResult(bestApproximation);
                 } else {
@@ -113,7 +113,7 @@
                         minIngots++;
                         ({exactMatches, bestApproximation} = canCreateAlloy(minIngots));
                     }
-                    resultDiv.innerHTML = `<p>Невозможно создать сплав с ${ingots} слитками. Минимальное необходимое количество: ${minIngots} слитков.</p>`;
+                    resultDiv.innerHTML = `<p>Cannot create an alloy with ${ingots} ingots. Minimum required quantity: ${minIngots} ingots.</p>`;
                 }
             } else {
                 exactMatches.forEach(r => {
@@ -124,8 +124,8 @@
     </script>
 </head>
 <body>
-    <h1>Калькулятор Сплавов</h1>
-    <label>Выберите сплав:
+    <h1>TFC 1.20.1 Alloy Calculator</h1>
+    <label>Select alloy:
         <select id="alloy" onchange="updateComponents()">
             <option value="Bismuth Bronze">Bismuth Bronze</option>
             <option value="Black Bronze">Black Bronze</option>
@@ -134,11 +134,11 @@
         </select>
     </label>
     <br>
-    <label>Количество слитков: <input type="number" id="ingots" value="1" min="1"></label>
+    <label>Number of ingots: <input type="number" id="ingots" value="1" min="1"></label>
     <br>
     <div id="components"></div>
-    <button onclick="calculateAlloy()">Рассчитать</button>
-    <h2>Результаты:</h2>
+    <button onclick="calculateAlloy()">Calculate</button>
+    <h2>Results:</h2>
     <div id="result"></div>
     
     <script>

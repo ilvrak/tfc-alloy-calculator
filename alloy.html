@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alloy Calculator</title>
+    <title>TFC 1.20.1 Alloy Calculator</title>
     <script>
         const alloys = {
             "Bismuth Bronze": {
@@ -30,7 +30,7 @@
             const alloy = document.getElementById("alloy").value;
             const componentsDiv = document.getElementById("components");
             componentsDiv.innerHTML = "";
-            
+
             for (const component in alloys[alloy]) {
                 componentsDiv.innerHTML += `<label>${component}: <input type='number' id='granularity_${component}' value='16' min='1'></label><br>`;
             }
@@ -51,7 +51,7 @@
 
             function canCreateAlloy(ingots) {
                 const total_mb = ingots * 144;
-                
+
                 for (const component in alloys[alloy]) {
                     min_values[component] = Math.ceil((total_mb * alloys[alloy][component][0]) / 100 / granularities[component]) * granularities[component];
                     max_values[component] = Math.floor((total_mb * alloys[alloy][component][1]) / 100 / granularities[component]) * granularities[component];
@@ -60,7 +60,7 @@
                 let results = [];
                 let bestRemainder = total_mb;
                 let bestCombination = null;
-                
+
                 function findCombination(components, index, currentCombo) {
                     if (index === components.length) {
                         let sum = Object.values(currentCombo).reduce((a, b) => a + b, 0);
@@ -73,14 +73,14 @@
                         }
                         return;
                     }
-                    
+
                     let component = components[index];
                     for (let i = min_values[component]; i <= max_values[component]; i += granularities[component]) {
                         currentCombo[component] = i;
                         findCombination(components, index + 1, currentCombo);
                     }
                 }
-                
+
                 findCombination(Object.keys(alloys[alloy]), 0, {});
                 return {exactMatches: results, bestApproximation: bestCombination};
             }
@@ -88,33 +88,39 @@
             let {exactMatches, bestApproximation} = canCreateAlloy(ingots);
             let resultDiv = document.getElementById("result");
             resultDiv.innerHTML = "";
-            
+            let table = "<table id='resultTable' border='1'><thead><tr>";
+
+            // Создаем заголовки таблицы
+            Object.keys(alloys[alloy]).forEach(component => {
+                table += `<th onclick="sortColumn('${component}')">${component} &#x21C5;</th>`;
+            });
+
+            table += "<th>Remaining (mb)</th></tr></thead><tbody>";
+
             function formatResult(result) {
-                let output = "<p>";
+                let row = "";
                 let totalMb = 0;
                 for (const component in result) {
                     if (component !== "remainder") {
                         let units = result[component] / granularities[component];
                         totalMb += result[component];
-                        output += `${component}: ${result[component]} mb (${units} × ${granularities[component]} mb) | `;
+                        row += `<td>${result[component]} mb (${units} × ${granularities[component]} mb)</td>`;
                     }
                 }
-                if (result.remainder) {
-                    output += `Remaining: ${result.remainder} mb`;
-                }
-                output += "</p>";
+                row += `<td>${result.remainder} mb</td>`;
+                table += `<tr>${row}</tr>`;
+
                 if (totalMb > MAX_MB) {
-                    output += `<p style='color: red;'>Warning: Total material exceeds ${MAX_MB} mb.</p>`;
+                    resultDiv.innerHTML += `<p style='color: red;'>Warning: Total material exceeds ${MAX_MB} mb.</p>`;
                     let maxIngots = Math.floor(MAX_MB / 144);
-                    output += `<p>Maximum ingots to stay within ${MAX_MB} mb: ${maxIngots}.</p>`;
+                    resultDiv.innerHTML += `<p>Maximum ingots to stay within ${MAX_MB} mb: ${maxIngots}.</p>`;
                 }
-                return output;
             }
-            
+
             if (exactMatches.length === 0) {
                 resultDiv.innerHTML = "<p>Cannot create alloy exactly. Possible options with remainder:</p>";
                 if (bestApproximation) {
-                    resultDiv.innerHTML += formatResult(bestApproximation);
+                    formatResult(bestApproximation);
                 } else {
                     let minIngots = ingots;
                     while (exactMatches.length === 0) {
@@ -125,14 +131,38 @@
                 }
             } else {
                 exactMatches.forEach(r => {
-                    resultDiv.innerHTML += formatResult(r);
+                    formatResult(r);
                 });
             }
+
+            table += "</tbody></table>";
+            resultDiv.innerHTML += table;
+        }
+
+        // Функция для сортировки столбцов таблицы
+        function sortColumn(columnName) {
+            let table = document.getElementById("resultTable");
+            let rows = Array.from(table.rows).slice(1); // Все строки, кроме заголовков
+            let columnIndex = Array.from(table.rows[0].cells).findIndex(cell => cell.textContent.includes(columnName));
+
+            // Сортировка строк
+            rows.sort((a, b) => {
+                let aText = a.cells[columnIndex].textContent.split(" ")[0].trim();
+                let bText = b.cells[columnIndex].textContent.split(" ")[0].trim();
+
+                aText = parseInt(aText.replace('mb', '').trim());
+                bText = parseInt(bText.replace('mb', '').trim());
+
+                return aText - bText;
+            });
+
+            // Перезаписываем строки в таблице
+            rows.forEach(row => table.appendChild(row));
         }
     </script>
 </head>
 <body>
-    <h1>Alloy Calculator</h1>
+    <h1>TFC 1.20.1 Alloy Calculator</h1>
     <label>Select Alloy:
         <select id="alloy" onchange="updateComponents()">
             <option value="Bismuth Bronze">Bismuth Bronze</option>
@@ -148,7 +178,7 @@
     <button onclick="calculateAlloy()">Calculate</button>
     <h2>Results:</h2>
     <div id="result"></div>
-    
+
     <script>
         updateComponents();
     </script>

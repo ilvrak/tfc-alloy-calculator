@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Разделение страницы на две половины</title>
+  <title>TFGM Calculator</title>
   <style>
     body, html {
       margin: 0;
@@ -148,7 +148,6 @@
         resultDiv.innerHTML = "";
         let table = "<table id='resultTable' border='1'><thead><tr>";
 
-        // Создаем заголовки таблицы
         Object.keys(alloys[alloy]).forEach(component => {
             table += `<th onclick="sortColumn('${component}')">${component} &#x21C5;</th>`;
         });
@@ -197,13 +196,11 @@
         resultDiv.innerHTML += table;
     }
 
-    // Функция для сортировки столбцов таблицы
     function sortColumn(columnName) {
         let table = document.getElementById("resultTable");
         let rows = Array.from(table.rows).slice(1); // Все строки, кроме заголовков
         let columnIndex = Array.from(table.rows[0].cells).findIndex(cell => cell.textContent.includes(columnName));
 
-        // Сортировка строк
         rows.sort((a, b) => {
             let aText = a.cells[columnIndex].textContent.split(" ")[0].trim();
             let bText = b.cells[columnIndex].textContent.split(" ")[0].trim();
@@ -214,7 +211,6 @@
             return aText - bText;
         });
 
-        // Перезаписываем строки в таблице
         rows.forEach(row => table.appendChild(row));
     }
 
@@ -244,8 +240,8 @@
 <body>
   <div class="container">
     <div class="half left">
-      <!-- Левая часть -->
-      <h1>Alloy Calculator</h1>
+      <!-- LEFT -->
+      <h1>TFGM Alloy Calculator</h1>
       <label>Select Alloy:
           <select id="alloy" onchange="updateComponents()">
               <option value="Bismuth Bronze">Bismuth Bronze</option>
@@ -274,8 +270,8 @@
 
 
     <div class="half right">
-      <!-- Правая часть -->
-      <h1>Bloomery Calculator</h1>
+      <!-- RIGHT -->
+      <h1>TFGM Bloomery Calculator</h1>
       <label>Ore Granularity (mb per unit):
           <!-- <input type="number" id="ore_granularity" value="16" min="1"> -->
           <select id="ore_granularity">

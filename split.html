@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Разделение страницы на две половины</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+    }
+
+    .container {
+      display: flex;
+      height: 100vh; /* Полная высота окна браузера */
+    }
+
+    .half {
+      flex: 1; /* Каждая половина будет занимать 50% ширины */
+    }
+
+    .left {
+      background-color: lightblue;
+    }
+
+    .right {
+      background-color: lightgreen;
+    }
+  </style>
+  <script>
+    const alloys = {
+        "Bismuth Bronze": {
+            "Copper": [50, 65],
+            "Zinc": [20, 30],
+            "Bismuth": [10, 20]
+        },
+        "Black Bronze": {
+            "Copper": [50, 70],
+            "Gold": [10, 25],
+            "Silver": [10, 25]
+        },
+        "Bronze": {
+            "Copper": [88, 92],
+            "Tin": [8, 12]
+        },
+        "Brass": {
+            "Copper": [88, 92],
+            "Zinc": [8, 12]
+        },
+        "Rose Gold": {
+            "Copper": [15, 30],
+            "Gold": [70, 85]
+        },
+        "Sterling Silver": {
+            "Copper": [20, 40],
+            "Silver": [60, 80]
+        }
+    };
+
+    function updateComponents() {
+        const alloy = document.getElementById("alloy").value;
+        const componentsDiv = document.getElementById("components");
+        componentsDiv.innerHTML = "";
+
+        for (const component in alloys[alloy]) {
+            componentsDiv.innerHTML += `<label>${component}: <input type='number' id='granularity_${component}' value='16' min='1'></label><br>`;
+        }
+    }
+
+    function calculateAlloy() {
+        let ingots = parseInt(document.getElementById("ingots").value);
+        const alloy = document.getElementById("alloy").value;
+        let granularities = {};
+        let min_values = {};
+        let max_values = {};
+        const MAX_MB = 3000;
+
+        for (const component in alloys[alloy]) {
+            const granularity = parseInt(document.getElementById(`granularity_${component}`).value);
+            granularities[component] = granularity;
+        }
+
+        function canCreateAlloy(ingots) {
+            const total_mb = ingots * 144;
+
+            for (const component in alloys[alloy]) {
+                min_values[component] = Math.ceil((total_mb * alloys[alloy][component][0]) / 100 / granularities[component]) * granularities[component];
+                max_values[component] = Math.floor((total_mb * alloys[alloy][component][1]) / 100 / granularities[component]) * granularities[component];
+            }
+
+            let results = [];
+            let bestRemainder = total_mb;
+            let bestCombination = null;
+
+            function findCombination(components, index, currentCombo) {
+                if (index === components.length) {
+                    let sum = Object.values(currentCombo).reduce((a, b) => a + b, 0);
+                    let remainder = sum - total_mb;
+                    if (remainder === 0) {
+                        results.push({...currentCombo, remainder: 0});
+                    } else if (remainder >= 0 && remainder < bestRemainder) {
+                        bestRemainder = remainder;
+                        bestCombination = {...currentCombo, remainder};
+                    }
+                    return;
+                }
+
+                let component = components[index];
+                for (let i = min_values[component]; i <= max_values[component]; i += granularities[component]) {
+                    currentCombo[component] = i;
+                    findCombination(components, index + 1, currentCombo);
+                }
+            }
+
+            findCombination(Object.keys(alloys[alloy]), 0, {});
+            return {exactMatches: results, bestApproximation: bestCombination};
+        }
+
+        let {exactMatches, bestApproximation} = canCreateAlloy(ingots);
+        let resultDiv = document.getElementById("result");
+        resultDiv.innerHTML = "";
+        let table = "<table id='resultTable' border='1'><thead><tr>";
+
+        // Создаем заголовки таблицы
+        Object.keys(alloys[alloy]).forEach(component => {
+            table += `<th onclick="sortColumn('${component}')">${component} &#x21C5;</th>`;
+        });
+
+        table += "<th>Remaining (mb)</th></tr></thead><tbody>";
+
+        function formatResult(result) {
+            let row = "";
+            let totalMb = 0;
+            for (const component in result) {
+                if (component !== "remainder") {
+                    let units = result[component] / granularities[component];
+                    totalMb += result[component];
+                    row += `<td>${result[component]} mb (${units} × ${granularities[component]} mb)</td>`;
+                }
+            }
+            row += `<td>${result.remainder} mb</td>`;
+            table += `<tr>${row}</tr>`;
+
+            if (totalMb > MAX_MB) {
+                resultDiv.innerHTML += `<p style='color: red;'>Warning: Total material exceeds ${MAX_MB} mb.</p>`;
+                let maxIngots = Math.floor(MAX_MB / 144);
+                resultDiv.innerHTML += `<p>Maximum ingots to stay within ${MAX_MB} mb: ${maxIngots}.</p>`;
+            }
+        }
+
+        if (exactMatches.length === 0) {
+            resultDiv.innerHTML = "<p>Cannot create alloy exactly. Possible options with remainder:</p>";
+            if (bestApproximation) {
+                formatResult(bestApproximation);
+            } else {
+                let minIngots = ingots;
+                while (exactMatches.length === 0) {
+                    minIngots++;
+                    ({exactMatches, bestApproximation} = canCreateAlloy(minIngots));
+                }
+                resultDiv.innerHTML = `<p>Cannot create alloy with ${ingots} ingots. Minimum required: ${minIngots} ingots.</p>`;
+            }
+        } else {
+            exactMatches.forEach(r => {
+                formatResult(r);
+            });
+        }
+
+        table += "</tbody></table>";
+        resultDiv.innerHTML += table;
+    }
+
+    // Функция для сортировки столбцов таблицы
+    function sortColumn(columnName) {
+        let table = document.getElementById("resultTable");
+        let rows = Array.from(table.rows).slice(1); // Все строки, кроме заголовков
+        let columnIndex = Array.from(table.rows[0].cells).findIndex(cell => cell.textContent.includes(columnName));
+
+        // Сортировка строк
+        rows.sort((a, b) => {
+            let aText = a.cells[columnIndex].textContent.split(" ")[0].trim();
+            let bText = b.cells[columnIndex].textContent.split(" ")[0].trim();
+
+            aText = parseInt(aText.replace('mb', '').trim());
+            bText = parseInt(bText.replace('mb', '').trim());
+
+            return aText - bText;
+        });
+
+        // Перезаписываем строки в таблице
+        rows.forEach(row => table.appendChild(row));
+    }
+</script>
+</head>
+<body>
+  <div class="container">
+    <div class="half left">
+      <!-- Левая часть -->
+      <h1>Alloy Calculator</h1>
+      <label>Select Alloy:
+          <select id="alloy" onchange="updateComponents()">
+              <option value="Bismuth Bronze">Bismuth Bronze</option>
+              <option value="Bronze">Bronze</option>
+              <option value="Black Bronze">Black Bronze</option>
+              <option value="Brass">Brass</option>
+              <option value="Rose Gold">Rose Gold</option>
+              <option value="Sterling Silver">Sterling Silver</option>
+          </select>
+      </label>
+      <br>
+      <label>Number of Ingots: <input type="number" id="ingots" value="1" min="1"></label>
+      <br>
+      <div id="components"></div>
+      <button onclick="calculateAlloy()">Calculate</button>
+      <h2>Results:</h2>
+      <div id="result"></div>
+
+      <script>
+          updateComponents();
+      </script>
+    </div>
+
+
+    <div class="half right">
+      <!-- Правая часть -->
+      <h1>Bloomery Calculator</h1>
+      <label>Ore Granularity (mb per unit):
+          <input type="number" id="ore_granularity" value="16" min="1">
+      </label>
+      <br><br>
+      <button onclick="calculateBloomery()">Calculate</button>
+      <h2>Results:</h2>
+      <div id="bloomery_result"></div>
+    </div>
+  </div>
+</body>
+</html>

@@ -19,14 +19,17 @@
     .half {
       flex: 1;
       overflow-y: auto;
+      padding: 10px;
     }
 
     .left {
-      background-color: lightblue;
+      /* tin */
+      background-color: #d3d4d5;
     }
 
     .right {
-      background-color: lightgreen;
+      /* bronze */
+      background-color: #daaa5e;
     }
   </style>
   <script>
@@ -101,6 +104,15 @@
         let min_values = {};
         let max_values = {};
         const MAX_MB = 3000;
+        let resultDiv = document.getElementById("result");
+        resultDiv.innerHTML = "";
+        const maxIngots = 20;
+
+        if (ingots * 144 > MAX_MB) {
+            resultDiv.innerHTML += `<p style='color: red;'>Warning: Total material exceeds ${MAX_MB} mb.</p>`;
+            resultDiv.innerHTML += `<p>Maximum ingots to stay within ${MAX_MB} mb: ${maxIngots}.</p>`;
+            return;
+        }
 
         for (const component in alloys[alloy]) {
             const granularity = parseInt(document.getElementById(`granularity_${component}`).value);
@@ -144,8 +156,6 @@
         }
 
         let {exactMatches, bestApproximation} = canCreateAlloy(ingots);
-        let resultDiv = document.getElementById("result");
-        resultDiv.innerHTML = "";
         let table = "<table id='resultTable' border='1'><thead><tr>";
 
         Object.keys(alloys[alloy]).forEach(component => {
@@ -167,11 +177,6 @@
             row += `<td>${result.remainder} mb</td>`;
             table += `<tr>${row}</tr>`;
 
-            if (totalMb > MAX_MB) {
-                resultDiv.innerHTML += `<p style='color: red;'>Warning: Total material exceeds ${MAX_MB} mb.</p>`;
-                let maxIngots = Math.floor(MAX_MB / 144);
-                resultDiv.innerHTML += `<p>Maximum ingots to stay within ${MAX_MB} mb: ${maxIngots}.</p>`;
-            }
         }
 
         if (exactMatches.length === 0) {
@@ -256,7 +261,7 @@
           </select>
       </label>
       <br>
-      <label>Number of Ingots: <input type="number" id="ingots" value="1" min="1"></label>
+      <label>Number of Ingots: <input type="number" id="ingots" value="1" min="1" max="20"></label>
       <br>
       <div id="components"></div>
       <button onclick="calculateAlloy()">Calculate</button>

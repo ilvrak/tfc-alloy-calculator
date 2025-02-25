@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Цепная линия</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        canvas {
+            background-color: #f0f0f0;
+            image-rendering: pixelated;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const gridSize = 20; // Размер клетки
+        let width, height; // Размеры сетки в клетках
+        let pixelSize; // Размер клетки в пикселях
+        let totalLength = 200; // Длина цепной линии
+
+        const points = [
+            { x: 5, y: 5 }, // Левая точка
+            { x: 20, y: 10 } // Правая точка
+        ];
+
+        let draggingPoint = null;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            pixelSize = Math.max(10, Math.min(window.innerWidth, window.innerHeight) / 40); // Подгоняем размер клеток
+            width = Math.floor(canvas.width / pixelSize);
+            height = Math.floor(canvas.height / pixelSize);
+            draw();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        canvas.addEventListener('mousedown', (e) => {
+            const { offsetX, offsetY } = e;
+            const x = Math.floor(offsetX / pixelSize);
+            const y = Math.floor(offsetY / pixelSize);
+
+            draggingPoint = points.find(p => Math.abs(p.x - x) <= 1 && Math.abs(p.y - y) <= 1);
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (draggingPoint) {
+                const { offsetX, offsetY } = e;
+                draggingPoint.x = Math.round(offsetX / pixelSize);
+                draggingPoint.y = Math.round(offsetY / pixelSize);
+
+                // Ограничение перемещения в пределах сетки
+                draggingPoint.x = Math.max(0, Math.min(width - 1, draggingPoint.x));
+                draggingPoint.y = Math.max(0, Math.min(height - 1, draggingPoint.y));
+                draw();
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            draggingPoint = null;
+        });
+
+        canvas.addEventListener('wheel', (e) => {
+            totalLength += e.deltaY > 0 ? 10 : -10;
+            totalLength = Math.max(20, totalLength); // Минимальная длина
+            draw();
+            e.preventDefault();
+        });
+
+        function drawGrid() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Рисуем сетку
+            ctx.strokeStyle = '#ccc';
+            for (let x = 0; x <= width; x++) {
+                ctx.beginPath();
+                ctx.moveTo(x * pixelSize, 0);
+                ctx.lineTo(x * pixelSize, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y <= height; y++) {
+                ctx.beginPath();
+                ctx.moveTo(0, y * pixelSize);
+                ctx.lineTo(canvas.width, y * pixelSize);
+                ctx.stroke();
+            }
+
+            // Нумерация по краям
+            ctx.fillStyle = '#000';
+            ctx.font = `${Math.max(8, pixelSize / 2)}px Arial`;
+            for (let x = 0; x < width; x++) {
+                ctx.fillText(x, x * pixelSize + 2, 10);
+            }
+            for (let y = 0; y < height; y++) {
+                ctx.fillText(y, 2, y * pixelSize + 12);
+            }
+        }
+
+        function catenary(x1, y1, x2, y2, length) {
+            const diffX = x2 - x1;
+            const diffY = y2 - y1;
+            const h = Math.sqrt(diffX ** 2 + diffY ** 2); // Расстояние между точками
+
+            if (length <= h) {
+                return []; // Слишком короткая длина
+            }
+
+            const a = (length - h) / (2 * Math.log(length / h));
+            const offset = (y1 + y2) / 2; // Сдвиг для правильного провисания
+
+            const points = [];
+            for (let x = x1; x <= x2; x++) {
+                const t = (x - x1) / diffX; // Нормализованное положение между точками
+                const y = offset - a * (Math.cosh((t * diffX - diffX / 2) / a) - Math.cosh(-diffX / (2 * a))); // Инверсия y
+                points.push({ x, y: Math.round(y) });
+            }
+            return points;
+        }
+
+        function drawCatenary() {
+            const [p1, p2] = points;
+            const catenaryPoints = catenary(p1.x, p1.y, p2.x, p2.y, totalLength);
+
+            ctx.fillStyle = 'blue';
+            catenaryPoints.forEach(({ x, y }) => {
+                if (y >= 0 && y < height) {
+                    ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+                }
+            });
+        }
+
+        function drawPoints() {
+            ctx.fillStyle = 'red';
+            points.forEach(({ x, y }) => {
+                ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+            });
+        }
+
+        function draw() {
+            drawGrid();
+            drawCatenary();
+            drawPoints();
+        }
+
+        resizeCanvas();
+    </script>
+</body>
+</html>

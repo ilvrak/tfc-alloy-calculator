@@ -110,7 +110,7 @@
                   <option value='16'>16</option>
                   <option value='121'>121</option>
                   <option value='129'>129</option>
-                  <option value='144'>144</option>
+                  <option value='144' selected>144</option>
               </select>
           </label><br>`;
         }
@@ -122,10 +122,10 @@
         let granularities = {};
         let min_values = {};
         let max_values = {};
-        const MAX_MB = 3000;
+        const MAX_MB = 4000;
+        let maxIngots = parseInt(MAX_MB / 144);
         let resultDiv = document.getElementById("result");
         resultDiv.innerHTML = "";
-        const maxIngots = 20;
 
         if (ingots * 144 > MAX_MB) {
             resultDiv.innerHTML += `<p style='color: red;'>Warning: Total material exceeds ${MAX_MB} mb.</p>`;
@@ -281,7 +281,7 @@
           </select>
       </label>
       <br>
-      <label>Number of Ingots: <input type="number" id="ingots" value="1" min="1" max="20"></label>
+      <label>Number of Ingots: <input type="number" id="ingots" value="1" min="1" max=`${maxIngots}`></label>
       <br>
       <div id="components"></div>
       <button onclick="calculateAlloy()">Calculate</button>
@@ -298,7 +298,7 @@
       <!-- RIGHT -->
       <h1>TFGM Bloomery Calculator</h1>
       <label>Ore Granularity (mb per unit):
-          <!-- <input type="number" id="ore_granularity" value="16" min="1"> -->
+          <!-- <input type="number" id="ore_granularity" value="144" min="1"> -->
           <select id="ore_granularity">
             <option value='16'>16</option>
             <option value='121'>121</option>
